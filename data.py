@@ -5,7 +5,6 @@ import csv
 import os.path
 from torch.utils.data import Dataset
 import torchvision
-from torchvision import transforms
 from PIL import Image
 
 

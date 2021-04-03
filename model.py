@@ -1,6 +1,7 @@
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+from torchvision import transforms
 import pytorch_lightning as pl
 from efficientnet_pytorch import EfficientNet 
 
