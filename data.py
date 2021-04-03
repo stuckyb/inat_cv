@@ -1,12 +1,74 @@
-#Salamander color morph machine learning
 
 import torch
 import numpy as np
+import csv
+import os.path
+from torch.utils.data import Dataset
 import torchvision
 from torchvision import transforms
+from PIL import Image
 
 
-####Oversampling
+class ImageCsvDataset(Dataset):
+    """
+    An images Dataset with image locations and classifications obtained from a
+    CSV file.
+    """
+    def __init__(self, csv_file, root_dir, x, y, transform=None):
+        """
+        csv_file (str): Path of a CSV file with image file names and labels.
+        root_dir (str): Folder containing the image files.
+        x (str): Column containing the image file names.
+        y (str): Column containing the image labels.
+        transform: Optional transform to be applied to each image.
+        """
+        self.xcol = x
+        self.ycol = y
+        self.classes = None
+        self.x = None
+        self.y = None
+        self.csv_file = csv_file
+        self.root_dir = root_dir
+        self.transform = transform
+
+        self._loadData(self.csv_file, self.xcol, self.ycol)
+
+    def _loadData(self, csv_file, xcol, ycol):
+        self.x = []
+        labels = []
+        labelset = set()
+
+        with open(csv_file) as fin:
+            reader = csv.DictReader(fin)
+            for row in reader:
+                labels.append(row[ycol])
+                labelset.add(row[ycol])
+                self.x.append(row[xcol])
+
+        self.classes = list(sorted(labelset))
+
+        # Convert the str labels to integer class indices.
+        class_str_to_i = {}
+        for i, class_str in enumerate(self.classes):
+            class_str_to_i[class_str] = i
+
+        self.y = []
+        for label_str in labels:
+            self.y.append(class_str_to_i[label_str])
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+        img_name = os.path.join(self.root_dir, self.x[idx])
+        img = Image.open(img_name)
+
+        if self.transform is not None:
+            img = self.transform(img)
+
+        return (img, self.y[idx])
+
+
 def make_weights_for_balanced_classes(images, nclasses):
     count = [0] * nclasses
     labels = []
@@ -23,7 +85,7 @@ def make_weights_for_balanced_classes(images, nclasses):
         weight[idx] = weight_per_class[val]
     return weight
 
-# Data augmentation and normalization for training.
+# Transformations for training data.
 train_transform = transforms.Compose([
         transforms.Resize((596,447)),
         transforms.RandomHorizontalFlip(p=0.5),
@@ -34,17 +96,23 @@ train_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
+# Transformations for validation/test data.
 val_transform = transforms.Compose([
         transforms.Resize((596,447)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
 def getAllImagesDataset(path):
+    """
+    Returns a DataSet instance with all images in a target folder and constant
+    "dummy" label for each image.
+    """
     all_images = torchvision.datasets.ImageFolder(
         root=path, transform=val_transform
     )
 
     return all_images
+
 
 def getDatasets(path, train_size=0.75, rng=None, train_idx=None, valid_idx=None):
     if rng is None:
