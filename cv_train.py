@@ -85,13 +85,13 @@ kf = StratifiedKFold(
     n_splits=args.n_folds, shuffle=True, random_state=args.rand_seed
 )
 all_images = ImageCsvDataset(
-    args.csv_file, args.images, args.fnames_col, args.labels_col
+    args.labels_csv, args.images, args.fnames_col, args.labels_col
 )
-indices = list(range(len(all_images)))
 
 loop_count = 0
-for train_idx, valid_idx in kf.split(indices, all_images.y): 
-    #print('train_idx: {0}, valid_idx: {0}'.format(train_idx, valid_idx))
+for train_idx, valid_idx in kf.split(all_images.x, all_images.y): 
+    #print('train_idx: {0}, valid_idx: {1}'.format(train_idx, valid_idx))
+    #print(len(train_idx), len(valid_idx))
 
     fold_folder = outpath / ('fold_' + str(loop_count))
     fold_folder.mkdir()
