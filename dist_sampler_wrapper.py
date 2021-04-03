@@ -1,3 +1,7 @@
+from torch.utils.data import DistributedSampler
+from typing import Iterator, List, Optional, Union
+
+
 class DistributedSamplerWrapper(DistributedSampler):
     """
     Wrapper over `Sampler` for distributed training.
