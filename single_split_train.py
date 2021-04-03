@@ -42,10 +42,6 @@ argp.add_argument(
     help='The batch size.'
 )
 argp.add_argument(
-    '-v', '--val_interval', type=int, required=False, default=350,
-    help='Validation interval, in iterations.'
-)
-argp.add_argument(
     '-m', '--max_iters', type=int, required=False, default=20000,
     help='The maximum number of training iterations (default: 20,000).'
 )
@@ -96,12 +92,11 @@ checkpoint_callback = ModelCheckpoint(
     verbose=True,
     monitor='valid_loss',
     mode='min',
-    prefix=f'weights-'
+    prefix='weights-'
 )
 
 trainer = pl.Trainer(
     logger=tb_logger, max_steps=args.max_iters,
-    val_check_interval=args.val_interval,
     gpus=1, checkpoint_callback=checkpoint_callback
 )
 trainer.fit(model, trainloader, valloader)
