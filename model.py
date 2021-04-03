@@ -55,14 +55,14 @@ class ENModel(pl.LightningModule):
             'loss': loss, 'preds': outputs, 'target': labels
         }
 
-        return loss
-
     def training_step_end(self, outputs):
         accuracy = self.train_acc(outputs['preds'], outputs['target'])
         self.log_dict(
             {'train_loss': outputs['loss'], 'train_acc': accuracy},
             on_step=True, on_epoch=True
         )
+
+        return outputs['loss']
 
     def training_epoch_end(self, training_step_outputs):
         self.train_acc.reset()
@@ -79,15 +79,15 @@ class ENModel(pl.LightningModule):
             'loss': loss, 'p_labels': p_labels, 'target': labels
         }
 
-        return loss
-
     def validation_step_end(self, outputs):
         accuracy = self.valid_acc(outputs['p_labels'], outputs['target'])
         self.valid_conf.update(outputs['p_labels'], outputs['target'])
         self.log_dict(
-            {'train_loss': outputs['loss'], 'train_acc': accuracy},
+            {'valid_loss': outputs['loss'], 'valid_acc': accuracy},
             on_step=False, on_epoch=True
         )
+
+        return outputs['loss']
 
     def validation_epoch_end(self, validation_step_outputs):
         print(self.valid_conf.compute())
