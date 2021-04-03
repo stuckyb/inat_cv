@@ -68,22 +68,35 @@ class ImageCsvDataset(Dataset):
 
         return (img, self.y[idx])
 
+    def getBalancedSampleWeights(self, indices=None):
+        """
+        Returns a list containing weights for each image that can be used to
+        create a balanced sampler for this dataset.  If indices is provided,
+        only the indices in the list are used to generate the weights.
+        """
+        if indices is None:
+            indices = list(range(len(self)))
 
-def make_weights_for_balanced_classes(images, nclasses):
-    count = [0] * nclasses
-    labels = []
-    for cnt, item in enumerate(images):
-        count[item[1]] += 1
-        labels.append(item[1])
-        print(cnt)
-    weight_per_class = [0.] * nclasses
-    N = float(sum(count))
-    for i in range(nclasses):
-        weight_per_class[i] = N/float(count[i])
-    weight = [0] * len(images)
-    for idx, val in enumerate(labels):
-        weight[idx] = weight_per_class[val]
-    return weight
+        n_classes = len(self.classes)
+
+        # Get the counts of each label class.
+        counts = [0] * n_classes
+        for i in indices:
+            counts[self.y[i]] += 1
+
+        # Calculate the weight to assign to each class.
+        weight_per_class = [0.] * n_classes
+        for i in range(n_classes):
+            if counts[i] != 0.:
+                weight_per_class[i] = len(indices) / float(counts[i])
+
+        # Build the list of weights for each image.
+        weights = []
+        for i in indices:
+            weights.append(weight_per_class[self.y[i]])
+
+        return weights
+
 
 # Transformations for training data.
 train_transform = transforms.Compose([
@@ -114,16 +127,31 @@ def getAllImagesDataset(path):
     return all_images
 
 
-def getDatasets(path, train_size=0.75, rng=None, train_idx=None, valid_idx=None):
+def getDatasets(
+    csv_file, root_dir, x, y, train_size=0.75,
+    train_transform=None, val_transform=None, rng=None,
+    train_idx=None, valid_idx=None
+):
+    """
+    Creates training and validation datasets for the given images folder and
+    CSV file containing image labels.
+
+    csv_file (str): Path of a CSV file with image file names and labels.
+    root_dir (str): Folder containing the image files.
+    x (str): Column containing the image file names.
+    y (str): Column containing the image labels.
+    train_transform: Optional transform to be applied to each training image.
+    val_transform: Optional transform to be applied to each validation image.
+    """
     if rng is None:
         rng = np.random.default_rng()
    
-    trainset = torchvision.datasets.ImageFolder(
-        root=path, transform=train_transform
+    trainset = ImageCsvDataset(
+        csv_file, root_dir, x, y, transform=train_transform
     )
-    validset = torchvision.datasets.ImageFolder(
-        root=path, transform=val_transform
-    )   
+    validset = ImageCsvDataset(
+        csv_file, root_dir, x, y, transform=val_transform
+    )
    
     if train_idx is None or valid_idx is None:
         num_train = len(trainset)
@@ -145,16 +173,20 @@ def getDataLoaders(
     train_data, val_data, batch_size=8, num_workers=16,
     use_weighted_sampling=True
 ):
+    """
+    train_data: A Subset instance.
+    val_data: A Subset instance.
+    """
     if use_weighted_sampling:
-        # For unbalanced dataset we create a weighted sampler
-        weights = make_weights_for_balanced_classes(
-            train_data, len(train_data.dataset.classes))
+        # Create a weighted sampler.
+        base_ds = train_data.dataset
+        weights = base_ds.getBalancedSampleWeights(train_data.indices)
         weights = torch.Tensor(weights)
-        sampler1 = torch.utils.data.sampler.WeightedRandomSampler(
+        sampler = torch.utils.data.sampler.WeightedRandomSampler(
             weights, len(weights)
         )
         trainloader = torch.utils.data.DataLoader(
-            train_data, sampler=sampler1, batch_size=batch_size, shuffle=False,
+            train_data, sampler=sampler, batch_size=batch_size, shuffle=False,
             num_workers=num_workers
         )
     else:
@@ -164,7 +196,7 @@ def getDataLoaders(
         )
 
     valloader = torch.utils.data.DataLoader(
-        val_data, batch_size=8, num_workers=16
+        val_data, batch_size=batch_size, num_workers=num_workers
     )
 
     return trainloader, valloader
