@@ -1,7 +1,7 @@
 # Implements training on a single train/validation split.
 
 import os
-from model import ENModel
+from model import ENModel, train_transform, val_transform
 from data import getDatasets, getDataLoaders
 import numpy as np
 import pytorch_lightning as pl
@@ -76,7 +76,8 @@ if exp_name == '':
 
 train_data, val_data = getDatasets(
     args.labels_csv, args.images, args.fnames_col, args.labels_col,
-    train_size=args.train_split, rng=rng
+    train_size=args.train_split,
+    train_transform=train_transform, val_transform=val_transform, rng=rng
 )
 trainloader, valloader = getDataLoaders(
     train_data, val_data, batch_size=args.batch_size

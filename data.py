@@ -98,23 +98,6 @@ class ImageCsvDataset(Dataset):
         return weights
 
 
-# Transformations for training data.
-train_transform = transforms.Compose([
-        transforms.Resize((596,447)),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.5),
-        transforms.RandomRotation(degrees=(-90, 90)),
-        transforms.ColorJitter(hue=.05, saturation=.05),
-        transforms.RandomAffine(degrees=0, translate=(.1, .1)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-
-# Transformations for validation/test data.
-val_transform = transforms.Compose([
-        transforms.Resize((596,447)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-
 def getAllImagesDataset(path):
     """
     Returns a DataSet instance with all images in a target folder and constant
