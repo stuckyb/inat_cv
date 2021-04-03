@@ -48,36 +48,51 @@ class ENModel(pl.LightningModule):
         outputs = self(inputs)
         #print(outputs, labels)
         p_labels = torch.max(outputs, 1).indices
-        print(p_labels, labels)
+        #print(p_labels, labels)
         loss = F.cross_entropy(outputs, labels)
-        accuracy = self.train_acc(outputs, labels)
-        print(accuracy)
+
+        return {
+            'loss': loss, 'preds': outputs, 'target': labels
+        }
+
+        return loss
+
+    def training_step_end(self, outputs):
+        accuracy = self.train_acc(outputs['preds'], outputs['target'])
         self.log_dict(
-            {'train_loss': loss, 'train_acc': accuracy},
+            {'train_loss': outputs['loss'], 'train_acc': accuracy},
             on_step=True, on_epoch=True
         )
 
-        return loss
+    def training_epoch_end(self, training_step_outputs):
+        self.train_acc.reset()
 
     def validation_step(self, batch, batch_idx):
         inputs, labels = batch
         outputs = self(inputs)
         #print(outputs, labels)
         p_labels = torch.max(outputs, 1).indices
-        print("valid_labels:", p_labels, labels)
+        #print("valid_labels:", p_labels, labels)
         loss = F.cross_entropy(outputs, labels)
-        accuracy = self.valid_acc(outputs, labels)
-        print(accuracy)
-        self.valid_conf.update(p_labels, labels)
-        self.log_dict(
-            {'valid_loss': loss, 'valid_acc': accuracy},
-            on_step=False, on_epoch=True, sync_dist=True
-        )
+
+        return {
+            'loss': loss, 'p_labels': p_labels, 'target': labels
+        }
 
         return loss
 
+    def validation_step_end(self, outputs):
+        accuracy = self.valid_acc(outputs['p_labels'], outputs['target'])
+        self.valid_conf.update(outputs['p_labels'], outputs['target'])
+        self.log_dict(
+            {'train_loss': outputs['loss'], 'train_acc': accuracy},
+            on_step=False, on_epoch=True
+        )
+
     def validation_epoch_end(self, validation_step_outputs):
         print(self.valid_conf.compute())
+        self.valid_conf.reset()
+        self.valid_acc.reset()
 
     def configure_optimizers(self):
         optimizer = optim.SGD(self.parameters(), lr=self.lr, momentum=0.9) 
