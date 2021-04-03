@@ -92,7 +92,7 @@ checkpoint_callback = ModelCheckpoint(
     verbose=True,
     monitor='valid_loss',
     mode='min',
-    prefix='weights-'
+    prefix='weights'
 )
 
 trainer = pl.Trainer(
