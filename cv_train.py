@@ -81,6 +81,12 @@ if os.path.isdir(outputdir):
 outpath = pathlib.Path(outputdir)
 outpath.mkdir()
 
+# Log the script arguments.
+with open(outpath / 'training_args.txt', 'w') as fout:
+    argsdict = vars(args)
+    for key in sorted(argsdict.keys()):
+        fout.write('{0}: {1}\n'.format(key, argsdict[key]))
+
 kf = StratifiedKFold(
     n_splits=args.n_folds, shuffle=True, random_state=args.rand_seed
 )
