@@ -196,7 +196,7 @@ def getDataLoaders(
         )
 
     valloader = torch.utils.data.DataLoader(
-        val_data, batch_size=batch_size, num_workers=num_workers
+        val_data, batch_size=batch_size, num_workers=num_workers, shuffle=False
     )
 
     return trainloader, valloader

@@ -1,10 +1,8 @@
 import torch
-import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 import pytorch_lightning as pl
 from efficientnet_pytorch import EfficientNet 
-import torch.nn.functional as F
-from pytorch_lightning.metrics import ConfusionMatrix
 
 
 class ENModel(pl.LightningModule):
