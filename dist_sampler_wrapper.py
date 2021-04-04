@@ -1,3 +1,8 @@
+#
+# This code is from Catalyst.  See
+# https://catalyst-team.github.io/catalyst/api/data.html#distributedsamplerwrapper.
+#
+
 from torch.utils.data import DistributedSampler
 from typing import Iterator, List, Optional, Union
 from torch.utils.data import Dataset
