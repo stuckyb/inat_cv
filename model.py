@@ -66,6 +66,7 @@ class ENModel(pl.LightningModule):
 
     def training_epoch_end(self, training_step_outputs):
         self.train_acc.reset()
+        print(f'Finished training epoch {self.current_epoch}.')
 
     def validation_step(self, batch, batch_idx):
         inputs, labels = batch
@@ -93,6 +94,8 @@ class ENModel(pl.LightningModule):
         print(self.valid_conf.compute())
         self.valid_conf.reset()
         self.valid_acc.reset()
+
+        print(f'Finished validation epoch {self.current_epoch}.')
 
     def configure_optimizers(self):
         optimizer = optim.SGD(self.parameters(), lr=self.lr, momentum=0.9) 

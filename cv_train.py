@@ -55,6 +55,10 @@ argp.add_argument(
     help='Experiment name for TensorBoard (default: LABELSCOL_LR).'
 )
 argp.add_argument(
+    '-p', '--no_prog_bar', action='store_true',
+    help='Disables the progress bar.'
+)
+argp.add_argument(
     '-r', '--rand_seed', type=int, required=False, default=None,
     help='A random number seed to use.'
 )
@@ -77,6 +81,11 @@ if exp_name == '':
 
 if os.path.isdir(outputdir):
     exit(f'\nThe output folder {outputdir} already exists.\n')
+
+if args.no_prog_bar:
+    pb_refresh_rate = 0
+else:
+    pb_refresh_rate = 1
 
 outpath = pathlib.Path(outputdir)
 outpath.mkdir()
@@ -101,7 +110,10 @@ for train_idx, valid_idx in kf.split(all_images.x, all_images.y):
 
     fold_folder = outpath / ('fold_' + str(loop_count))
     fold_folder.mkdir()
-    print(f'Cross-validation fold {loop_count}; saving results to {fold_folder}.')
+    print(
+        f'\n#\n# Cross-validation fold {loop_count}; saving results to '
+        f'{fold_folder}.\n#'
+    )
     
     train_data, val_data = getDatasets(
         args.labels_csv, args.images, args.fnames_col, args.labels_col,
@@ -128,7 +140,8 @@ for train_idx, valid_idx in kf.split(all_images.x, all_images.y):
 
     trainer = pl.Trainer(
         logger=tb_logger, max_steps=args.max_iters,
-        gpus=1, checkpoint_callback=checkpoint_callback
+        gpus=1, checkpoint_callback=checkpoint_callback,
+        progress_bar_refresh_rate=pb_refresh_rate
     )
 
     trainer.fit(model, trainloader, valloader)
