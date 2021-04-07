@@ -47,8 +47,8 @@ argp.add_argument(
     help='The maximum number of training iterations (default: 20,000).'
 )
 argp.add_argument(
-    '-o', '--output_dir', type=str, required=False, default='',
-    help='Location for output logs and checkpoints (default: cwd).'
+    '-o', '--output_dir', type=str, required=True,
+    help='Location for output logs and checkpoints.'
 )
 argp.add_argument(
     '-e', '--experiment_name', type=str, required=False, default='',
@@ -71,15 +71,13 @@ else:
     rng = None
 
 outputdir = args.output_dir
-if outputdir == '':
-    outputdir = os.getcwd()
 
 exp_name = args.experiment_name
 if exp_name == '':
     exp_name = '{0}_{1}'.format(args.labels_col, args.learning_rate)
 
 
-if os.path.isdir(outputdir):
+if os.path.exists(outputdir):
     exit(f'\nThe output folder {outputdir} already exists.\n')
 
 if args.no_prog_bar:
@@ -141,7 +139,8 @@ for train_idx, valid_idx in kf.split(all_images.x, all_images.y):
     trainer = pl.Trainer(
         logger=tb_logger, max_steps=args.max_iters,
         gpus=1, checkpoint_callback=checkpoint_callback,
-        progress_bar_refresh_rate=pb_refresh_rate
+        progress_bar_refresh_rate=pb_refresh_rate,
+        max_epochs=10000
     )
 
     trainer.fit(model, trainloader, valloader)

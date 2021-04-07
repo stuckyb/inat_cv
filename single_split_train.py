@@ -4,6 +4,7 @@ import os
 from model import ENModel, train_transform, val_transform
 from data import getDatasets, getDataLoaders
 import numpy as np
+import torch
 import pytorch_lightning as pl
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -46,12 +47,16 @@ argp.add_argument(
     help='The maximum number of training iterations (default: 20,000).'
 )
 argp.add_argument(
-    '-o', '--output_dir', type=str, required=False, default='',
-    help='Location for output logs and checkpoints (default: cwd).'
+    '-o', '--output_dir', type=str, required=True,
+    help='Location for output logs and checkpoints.'
 )
 argp.add_argument(
     '-e', '--experiment_name', type=str, required=False, default='',
     help='Experiment name for TensorBoard (default: LABELSCOL_LR).'
+)
+argp.add_argument(
+    '-g', '--n_gpus', type=int, required=False, default=-1,
+    help='The number of GPUs to use (default: all available).'
 )
 argp.add_argument(
     '-r', '--rand_seed', type=int, required=False, default=None,
@@ -66,13 +71,17 @@ else:
     rng = None
 
 outputdir = args.output_dir
-if outputdir == '':
-    outputdir = os.getcwd()
+
+if os.path.isdir(outputdir):
+    exit(f'\nThe output folder {outputdir} already exists.\n')
 
 exp_name = args.experiment_name
 if exp_name == '':
     exp_name = '{0}_{1}'.format(args.labels_col, args.learning_rate)
 
+n_gpus = args.n_gpus
+if n_gpus < 0:
+    n_gpus = torch.cuda.device_count()
 
 train_data, val_data = getDatasets(
     args.labels_csv, args.images, args.fnames_col, args.labels_col,
@@ -80,7 +89,8 @@ train_data, val_data = getDatasets(
     train_transform=train_transform, val_transform=val_transform, rng=rng
 )
 trainloader, valloader = getDataLoaders(
-    train_data, val_data, batch_size=args.batch_size
+    train_data, val_data, batch_size=args.batch_size,
+    use_weighted_sampling=False
 )
 
 model = ENModel(args.learning_rate, len(train_data.dataset.classes))
@@ -97,7 +107,9 @@ checkpoint_callback = ModelCheckpoint(
 
 trainer = pl.Trainer(
     logger=tb_logger, max_steps=args.max_iters,
-    gpus=1, checkpoint_callback=checkpoint_callback
+    gpus=n_gpus,
+    checkpoint_callback=checkpoint_callback,
+    accelerator='dp'
 )
 trainer.fit(model, trainloader, valloader)
 
