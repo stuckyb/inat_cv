@@ -59,6 +59,10 @@ argp.add_argument(
     help='The number of GPUs to use (default: all available).'
 )
 argp.add_argument(
+    '-p', '--no_prog_bar', action='store_true',
+    help='Disables the progress bar.'
+)
+argp.add_argument(
     '-r', '--rand_seed', type=int, required=False, default=None,
     help='A random number seed to use.'
 )
@@ -78,6 +82,11 @@ if os.path.isdir(outputdir):
 exp_name = args.experiment_name
 if exp_name == '':
     exp_name = '{0}_{1}'.format(args.labels_col, args.learning_rate)
+
+if args.no_prog_bar:
+    pb_refresh_rate = 0
+else:
+    pb_refresh_rate = 1
 
 n_gpus = args.n_gpus
 if n_gpus < 0:
@@ -109,7 +118,10 @@ trainer = pl.Trainer(
     logger=tb_logger, max_steps=args.max_iters,
     gpus=n_gpus,
     checkpoint_callback=checkpoint_callback,
-    accelerator='dp'
+    progress_bar_refresh_rate=pb_refresh_rate,
+    max_epochs=1000,
+    #accelerator='dp'
 )
+
 trainer.fit(model, trainloader, valloader)
 
