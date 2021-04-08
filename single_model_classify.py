@@ -50,7 +50,7 @@ args = argp.parse_args()
 
 if args.labels_csv != '' and (args.fnames_col == '' or args.labels_col == ''):
     exit(
-        '\nError: If a labels CSV file is provided, file and lable column '
+        '\nError: If a labels CSV file is provided, file and label column '
         'names must also be provided.\n'
     )
 
