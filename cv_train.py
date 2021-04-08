@@ -31,6 +31,11 @@ argp.add_argument(
     help='The column in the CSV file containing the image labels.'
 )
 argp.add_argument(
+    '-w', '--model_wts', type=str, required=False, default='',
+    help='The path to a model weights/checkpoint file.  If provided, the '
+    'model will be initialized using these weights prior to training.'
+)
+argp.add_argument(
     '-l', '--learning_rate', type=float, required=False, default=0.001,
     help='The learning rate.'
 )
@@ -122,7 +127,15 @@ for train_idx, valid_idx in kf.split(all_images.x, all_images.y):
         train_data, val_data, batch_size=args.batch_size
     )
 
-    model = ENModel(args.learning_rate, len(train_data.dataset.classes))
+    if args.model_wts != '':
+        print(f'Loading model weights from {args.model_wts}...')
+        model = ENModel.load_from_checkpoint(
+            args.model_wts, lr=args.learning_rate,
+            n_classes=len(train_data.dataset.classes)
+        )
+    else:
+        model = ENModel(args.learning_rate, len(train_data.dataset.classes))
+
     tb_logger = pl_loggers.TensorBoardLogger(
         str(outpath), exp_name + '-fold_{0}'.format(loop_count)
     )

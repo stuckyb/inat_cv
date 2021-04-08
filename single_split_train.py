@@ -1,6 +1,8 @@
 # Implements training on a single train/validation split.
 
 import os
+import sys
+import pathlib
 from model import ENModel, train_transform, val_transform
 from data import getDatasets, getDataLoaders
 import numpy as np
@@ -29,6 +31,11 @@ argp.add_argument(
 argp.add_argument(
     '-y', '--labels_col', type=str, required=True,
     help='The column in the CSV file containing the image labels.'
+)
+argp.add_argument(
+    '-w', '--model_wts', type=str, required=False, default='',
+    help='The path to a model weights/checkpoint file.  If provided, the '
+    'model will be initialized using these weights prior to training.'
 )
 argp.add_argument(
     '-l', '--learning_rate', type=float, required=False, default=0.001,
@@ -88,6 +95,17 @@ if args.no_prog_bar:
 else:
     pb_refresh_rate = 1
 
+outpath = pathlib.Path(outputdir)
+outpath.mkdir()
+
+# Log the script arguments.
+with open(outpath / 'training_args.txt', 'w') as fout:
+    fout.write(' '.join(sys.argv) + '\n')
+    fout.write('\n')
+    argsdict = vars(args)
+    for key in sorted(argsdict.keys()):
+        fout.write('{0}: {1}\n'.format(key, argsdict[key]))
+
 n_gpus = args.n_gpus
 if n_gpus < 0:
     n_gpus = torch.cuda.device_count()
@@ -99,10 +117,18 @@ train_data, val_data = getDatasets(
 )
 trainloader, valloader = getDataLoaders(
     train_data, val_data, batch_size=args.batch_size,
-    use_weighted_sampling=False
+    use_weighted_sampling=True
 )
 
-model = ENModel(args.learning_rate, len(train_data.dataset.classes))
+if args.model_wts != '':
+    print(f'Loading model weights from {args.model_wts}...')
+    model = ENModel.load_from_checkpoint(
+        args.model_wts, lr=args.learning_rate,
+        n_classes=len(train_data.dataset.classes)
+    )
+else:
+    model = ENModel(args.learning_rate, len(train_data.dataset.classes))
+
 tb_logger = pl_loggers.TensorBoardLogger(outputdir, exp_name)
 
 checkpoint_callback = ModelCheckpoint(
