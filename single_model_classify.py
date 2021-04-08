@@ -108,5 +108,8 @@ with torch.no_grad():
         correct_cnt += sum(p_labels == adj_labels)
         print(correct_cnt / img_cnt, img_cnt)
 
-    print(c_mat.compute())
+print('\nTotal images:', img_cnt)
+print('Accuracy:', float(correct_cnt / img_cnt))
+print('Confusion matrix:')
+print(c_mat.compute().numpy())
 
