@@ -5,6 +5,7 @@ import csv
 import os.path
 from torch.utils.data import Dataset
 import torchvision
+import glob
 from PIL import Image
 
 
@@ -95,6 +96,41 @@ class ImageCsvDataset(Dataset):
             weights.append(weight_per_class[self.y[i]])
 
         return weights
+
+
+class UnlabeledImagesDataset(Dataset):
+    """
+    An images Dataset for images without labels.
+    """
+    def __init__(self, imgs_dir, transform=None):
+        """
+        imgs_dir (str): Folder containing the image files.
+        transform: Optional transform to be applied to each image.
+        """
+        self.x = None
+        self.y = None
+        self.imgs_dir = imgs_dir
+        self.transform = transform
+
+        self._loadData()
+
+    def _loadData(self):
+        jpg_imgs = list(glob.glob(os.path.join(self.imgs_dir, '*.jpg')))
+        png_imgs = list(glob.glob(os.path.join(self.imgs_dir, '*.png')))
+
+        self.x = jpg_imgs + png_imgs
+        self.x.sort()
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+        img = Image.open(self.x[idx])
+
+        if self.transform is not None:
+            img = self.transform(img)
+
+        return (img, 0)
 
 
 def getAllImagesDataset(path):

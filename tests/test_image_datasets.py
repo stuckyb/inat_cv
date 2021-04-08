@@ -16,7 +16,9 @@
 
 import unittest
 from torchvision import transforms
-from data import ImageCsvDataset, getDatasets, getDataLoaders
+from data import (
+    ImageCsvDataset, UnlabeledImagesDataset, getDatasets, getDataLoaders
+)
 
 
 class TestImageCsvDataset(unittest.TestCase):
@@ -114,4 +116,27 @@ class TestGetDatasets(unittest.TestCase):
         print(counts)
 
         self.assertLess(abs(0.5 - counts[0]), 0.03)
+
+
+class TestUnlabeledImagesDataset(unittest.TestCase):
+    def test_init(self):
+        ds = UnlabeledImagesDataset('images/12_images')
+
+        self.assertEqual(12, len(ds))
+        self.assertEqual('images/12_images/black.png', ds.x[0])
+
+    def test_getitem(self):
+        ds = UnlabeledImagesDataset('images/12_images')
+
+        self.assertEqual((448, 448), ds[0][0].size)
+        self.assertEqual(0, ds[0][1])
+
+        ds = UnlabeledImagesDataset(
+            'images/12_images',
+            transform=transforms.Compose([
+                transforms.Resize((224, 224))
+            ])
+        )
+
+        self.assertEqual((224, 224), ds[0][0].size)
 
