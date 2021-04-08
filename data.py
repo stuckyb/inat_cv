@@ -111,6 +111,7 @@ class UnlabeledImagesDataset(Dataset):
         self.y = None
         self.imgs_dir = imgs_dir
         self.transform = transform
+        self.classes = [0]
 
         self._loadData()
 
