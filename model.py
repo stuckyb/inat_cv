@@ -39,9 +39,21 @@ class ENModel(pl.LightningModule):
         self.train_acc = pl.metrics.Accuracy()
         self.valid_acc = pl.metrics.Accuracy()
         self.valid_conf = pl.metrics.ConfusionMatrix(num_classes=n_classes)
+        self.top_only = False
 
     def forward(self, x):
         return self.base_model(x)
+
+    def setTrainTopOnly(self):
+        """
+        "Freezes" all layers in the network except for the top layer and only
+        uses the top layer's parameters for training.
+        """
+        for module in self.modules():
+            module.requires_grad_(False)
+        self.base_model._fc.requires_grad_(True)
+
+        self.top_only = True
 
     def training_step(self, batch, batch_idx):
         inputs, labels = batch

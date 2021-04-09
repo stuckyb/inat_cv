@@ -46,6 +46,10 @@ argp.add_argument(
     help='The proportion of images to use for training.'
 )
 argp.add_argument(
+    '-t', '--top_only', action='store_true',
+    help='Train only the output layer of the model.'
+)
+argp.add_argument(
     '-b', '--batch_size', type=int, required=False, default=8,
     help='The batch size.'
 )
@@ -78,6 +82,7 @@ args = argp.parse_args()
 
 if args.rand_seed is not None:
     rng = np.random.default_rng(seed=args.rand_seed)
+    pl.utilities.seed.seed_everything(seed=args.rand_seed)
 else:
     rng = None
 
@@ -128,6 +133,9 @@ if args.model_wts != '':
     )
 else:
     model = ENModel(args.learning_rate, len(train_data.dataset.classes))
+
+if args.top_only:
+    model.setTrainTopOnly()
 
 tb_logger = pl_loggers.TensorBoardLogger(outputdir, exp_name)
 

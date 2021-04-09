@@ -44,6 +44,10 @@ argp.add_argument(
     help='The number of cross-validation folds.'
 )
 argp.add_argument(
+    '-t', '--top_only', action='store_true',
+    help='Train only the output layer of the model.'
+)
+argp.add_argument(
     '-b', '--batch_size', type=int, required=False, default=8,
     help='The batch size.'
 )
@@ -72,6 +76,7 @@ args = argp.parse_args()
 
 if args.rand_seed is not None:
     rng = np.random.default_rng(seed=args.rand_seed)
+    pl.utilities.seed.seed_everything(seed=args.rand_seed)
 else:
     rng = None
 
@@ -135,6 +140,9 @@ for train_idx, valid_idx in kf.split(all_images.x, all_images.y):
         )
     else:
         model = ENModel(args.learning_rate, len(train_data.dataset.classes))
+
+    if args.top_only:
+        model.setTrainTopOnly()
 
     tb_logger = pl_loggers.TensorBoardLogger(
         str(outpath), exp_name + '-fold_{0}'.format(loop_count)
