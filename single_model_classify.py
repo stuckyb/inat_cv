@@ -4,6 +4,8 @@ from data import UnlabeledImagesDataset, ImageCsvDataset
 import sys
 import torch
 import torch.utils.data
+import torch.nn.functional as F
+import os.path
 import pandas as pd
 import csv 
 import numpy as np
@@ -71,6 +73,17 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
 
+if args.output != '':
+    writer = csv.DictWriter(
+        open(args.output, 'w'),
+        ['file', 'prediction', '0', '1']
+    )
+    writer.writeheader()
+else:
+    writer = None
+
+rowout = {}
+
 with torch.no_grad():
     model = ENModel.load_from_checkpoint(args.model_wts, lr=0.001, n_classes=2)
     model.to(device)
@@ -102,6 +115,15 @@ with torch.no_grad():
         #print(p_labels, adj_labels)
         #print(p_labels == adj_labels)
         #print(sum(p_labels == adj_labels))
+
+        if writer is not None:
+            sm_outputs = F.softmax(outputs, 1)
+            for i, p_label in enumerate(p_labels):
+                rowout['file'] = os.path.basename(imgs_ds.x[img_cnt + i])
+                rowout['prediction'] = int(p_label)
+                rowout['0'] = float(sm_outputs[i][0])
+                rowout['1'] = float(sm_outputs[i][1])
+                writer.writerow(rowout)
 
         c_mat.update(p_labels, adj_labels)
         img_cnt += len(adj_labels)
